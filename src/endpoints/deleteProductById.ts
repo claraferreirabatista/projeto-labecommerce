@@ -1,18 +1,34 @@
 import { Request, Response } from "express";
-import { products } from "../database";
+import { db } from "../database/knex";
 
-export const deleteProductById = (req: Request, res: Response) => {
-  const id = req.params.id;
+export const deleteProductById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
 
-  const indexProductToDelete = products.findIndex(
-    (product) => product.id === id
-  );
+    const deletedRows = await db("products")
+      .where({ id })
+      .del();
 
-  if (indexProductToDelete < 0) {
-    return res.status(400).send("Produto não cadastrado");
+    if (deletedRows > 0) {
+      res.status(200).send({
+        message: "Produto excluído com sucesso"
+      });
+    } else {
+      res.status(404).send({
+        message: "Produto não encontrado"
+      });
+    }
+  } catch (error) {
+    console.log(error);
+
+    if (res.statusCode === 200) {
+      res.status(500);
+    }
+
+    if (error instanceof Error) {
+      res.send(error.message);
+    } else {
+      res.send("Erro inesperado");
+    }
   }
-
-  products.splice(indexProductToDelete, 1);
-
-  res.status(200).send("Produto apagado com sucesso");
 };
